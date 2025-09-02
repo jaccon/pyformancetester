@@ -215,4 +215,4 @@ Este projeto está licenciado sob a licença MIT - consulte o arquivo LICENSE pa
 
 ---
 
-Desenvolvido por [Seu Nome] - 2025
+Desenvolvido por André Jaccon
