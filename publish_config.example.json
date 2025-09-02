@@ -1,0 +1,17 @@
+{
+    "medium": {
+        "token": "YOUR_MEDIUM_API_TOKEN",
+        "publication_id": "YOUR_PUBLICATION_ID_OPTIONAL"
+    },
+    "devto": {
+        "api_key": "YOUR_DEV_TO_API_KEY"
+    },
+    "hashnode": {
+        "api_key": "YOUR_HASHNODE_API_KEY",
+        "publication_id": "YOUR_HASHNODE_PUBLICATION_ID"
+    },
+    "linkedin": {
+        "access_token": "YOUR_LINKEDIN_ACCESS_TOKEN",
+        "author_id": "YOUR_LINKEDIN_USER_ID"
+    }
+}

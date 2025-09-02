@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <!-- Material Design Lite -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-indigo.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    
+    <!-- Google Charts Dark Mode -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    
+    <style>
+        {% if theme == 'dark' %}
+        /* Estilos para o tema escuro */
+        body {
+            font-family: 'Roboto', 'Helvetica', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .mdl-layout__header {
+            background-color: #263238;
+            color: white;
+        }
+        .mdl-layout__drawer-button {
+            color: white;
+        }
+        {% else %}
+        /* Estilos para o tema claro (default) */
+        body {
+            font-family: 'Roboto', 'Helvetica', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333333;
+        }
+        .mdl-layout__header {
+            background-color: #3f51b5;
+            color: white;
+        }
+        .mdl-layout__drawer-button {
+            color: white;
+        }
+        {% endif %}
+        
+        {% if theme == 'dark' %}
+        /* Estilos do drawer para tema escuro */
+        .mdl-layout__drawer {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .mdl-layout__drawer .mdl-navigation .mdl-navigation__link {
+            color: #e0e0e0;
+        }
+        .mdl-layout__drawer .mdl-navigation .mdl-navigation__link:hover {
+            background-color: #2c2c2c;
+        }
+        .mdl-card {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .mdl-card__title {
+            color: #e0e0e0;
+        }
+        .mdl-card__supporting-text {
+            color: #b0b0b0;
+        }
+        .mdl-data-table {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .mdl-data-table thead {
+            background-color: #263238;
+        }
+        .mdl-data-table td,
+        .mdl-data-table th {
+            border-bottom: 1px solid #333333;
+        }
+        {% else %}
+        /* Estilos do drawer para tema claro */
+        .mdl-layout__drawer {
+            background-color: #ffffff;
+            color: #333333;
+        }
+        .mdl-layout__drawer .mdl-navigation .mdl-navigation__link {
+            color: #333333;
+        }
+        .mdl-layout__drawer .mdl-navigation .mdl-navigation__link:hover {
+            background-color: #f0f0f0;
+        }
+        .mdl-card {
+            background-color: #ffffff;
+            color: #333333;
+        }
+        .mdl-card__title {
+            color: #3f51b5;
+        }
+        .mdl-card__supporting-text {
+            color: #666666;
+        }
+        .mdl-data-table {
+            background-color: #ffffff;
+            color: #333333;
+        }
+        .mdl-data-table thead {
+            background-color: #e0e0e0;
+        }
+        .mdl-data-table td,
+        .mdl-data-table th {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        {% endif %}
+        /* Estilos comuns para ambos os temas */
+        .page-content {
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .demo-card-wide {
+            width: 100%;
+            margin-bottom: 24px;
+        }
+        
+        {% if theme == 'dark' %}
+        /* Estilos do card para tema escuro */
+        .demo-card-wide > .mdl-card__title {
+            height: 64px;
+            background-color: #263238;
+            color: white;
+        }
+        .demo-card-wide > .mdl-card__menu {
+            color: white;
+        }
+        {% else %}
+        /* Estilos do card para tema claro */
+        .demo-card-wide > .mdl-card__title {
+            height: 64px;
+            background-color: #3f51b5;
+            color: white;
+        }
+        .demo-card-wide > .mdl-card__menu {
+            color: white;
+        }
+        {% endif %}
+        .mdl-data-table {
+            width: 100%;
+            white-space: normal;
+        }
+        .full-width-table {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 16px;
+        }
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        /* Badges para tipos de recursos - comum para ambos temas */
+        .resource-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        /* Os badges têm cores fixas independente do tema */
+        .badge-js {
+            background-color: #f0db4f;
+            color: #323330;
+        }
+        .badge-css {
+            background-color: #2965f1;
+            color: #ffffff;
+        }
+        .badge-img {
+            background-color: #e44d26;
+            color: #ffffff;
+        }
+        .badge-font {
+            background-color: #9c27b0;
+            color: #ffffff;
+        }
+        .badge-api {
+            background-color: #4caf50;
+            color: #ffffff;
+        }
+        .badge-html {
+            background-color: #e34c26;
+            color: #ffffff;
+        }
+        .badge-media {
+            background-color: #ff9800;
+            color: #ffffff;
+        }
+        .badge-other {
+            background-color: #607d8b;
+            color: #ffffff;
+        }
+        .badge-image {
+            background-color: #3f51b5;
+            color: #ffffff;
+        }
+        /* Melhorias na tabela de recursos */
+        {% if theme == 'dark' %}
+        /* Tema escuro para tabelas */
+        .mdl-data-table {
+            background-color: #272727;
+            border: none;
+        }
+        .mdl-data-table thead {
+            background-color: #323232;
+        }
+        .mdl-data-table th {
+            color: #b0b0b0;
+            font-weight: 500;
+            text-align: left;
+            padding: 12px 18px;
+        }
+        .mdl-data-table td {
+            color: #e0e0e0;
+            padding: 10px 18px;
+            border-bottom: 1px solid #333;
+        }
+        .mdl-data-table tbody tr:hover {
+            background-color: rgba(63, 81, 181, 0.1);
+        }
+        {% else %}
+        /* Tema claro para tabelas */
+        .mdl-data-table {
+            background-color: #ffffff;
+            border: none;
+        }
+        .mdl-data-table thead {
+            background-color: #f5f5f5;
+        }
+        .mdl-data-table th {
+            color: #666666;
+            font-weight: 500;
+            text-align: left;
+            padding: 12px 18px;
+        }
+        .mdl-data-table td {
+            color: #333333;
+            padding: 10px 18px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .mdl-data-table tbody tr:hover {
+            background-color: rgba(63, 81, 181, 0.05);
+        }
+        {% endif %}
+        
+        /* Comum para ambos os temas */
+        .full-width-table {
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .stat-label {
+            color: rgba(0, 0, 0, 0.54);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .color-good {
+            color: #4CAF50;
+        }
+        .color-warning {
+            color: #FF9800;
+        }
+        .color-error {
+            color: #F44336;
+        }
+        .color-info {
+            color: #2196F3;
+        }
+        .resource-badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 3px;
+            color: white;
+            margin: 2px;
+            font-size: 12px;
+        }
+        .badge-image {
+            background-color: #3f51b5;
+        }
+        .badge-css {
+            background-color: #9C27B0;
+        }
+        .badge-js {
+            background-color: #FFC107;
+            color: #333;
+        }
+        .badge-font {
+            background-color: #4CAF50;
+        }
+        .badge-video {
+            background-color: #F44336;
+        }
+        .badge-api {
+            background-color: #009688;
+        }
+        .badge-other {
+            background-color: #607D8B;
+        }
+        .section-divider {
+            margin: 32px 0;
+            border-top: 1px solid #ddd;
+        }
+        .mdl-grid {
+            padding: 0;
+        }
+        .graph-card {
+            padding: 16px;
+        }
+        .graph-img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 16px;
+        }
+        .status-2xx {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .status-3xx {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        .status-4xx {
+            color: #F44336;
+            font-weight: bold;
+        }
+        .status-5xx {
+            color: #9C27B0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Always shows a header, even in smaller screens. -->
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        <header class="mdl-layout__header">
+            <div class="mdl-layout__header-row">
+                <!-- Title -->
+                <span class="mdl-layout-title">{{ title }}</span>
+                <!-- Add spacer, to align navigation to the right -->
+                <div class="mdl-layout-spacer"></div>
+                <!-- Navigation. We hide it in small screens. -->
+                <nav class="mdl-navigation mdl-layout--large-screen-only">
+                    <a class="mdl-navigation__link" href="#overview">Visão Geral</a>
+                    <a class="mdl-navigation__link" href="#resources">Recursos</a>
+                    <a class="mdl-navigation__link" href="#http">HTTP</a>
+                    <a class="mdl-navigation__link" href="#api">APIs</a>
+                    <a class="mdl-navigation__link" href="#charts">Gráficos</a>
+                </nav>
+            </div>
+        </header>
+        <div class="mdl-layout__drawer">
+            <span class="mdl-layout-title">Relatório</span>
+            <nav class="mdl-navigation">
+                <a class="mdl-navigation__link" href="#overview">Visão Geral</a>
+                <a class="mdl-navigation__link" href="#resources">Recursos</a>
+                <a class="mdl-navigation__link" href="#http">HTTP</a>
+                <a class="mdl-navigation__link" href="#api">APIs</a>
+                <a class="mdl-navigation__link" href="#charts">Gráficos</a>
+            </nav>
+        </div>
+        <main class="mdl-layout__content">
+            <div class="page-content">
+                <h4 id="overview" class="mdl-typography--display-1">Visão Geral</h4>
+                
+                <!-- Estatísticas Gerais -->
+                <div class="mdl-grid">
+                    <div class="mdl-cell mdl-cell--3-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp stat-card">
+                            <div class="stat-value color-info">{{ total_resources }}</div>
+                            <div class="stat-label">Total de Recursos</div>
+                        </div>
+                    </div>
+                    <div class="mdl-cell mdl-cell--3-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp stat-card">
+                            <div class="stat-value {% if total_load_time < 3 %}color-good{% elif total_load_time < 5 %}color-warning{% else %}color-error{% endif %}">{{ total_load_time }} s</div>
+                            <div class="stat-label">Tempo de Carregamento</div>
+                        </div>
+                    </div>
+                    <div class="mdl-cell mdl-cell--3-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp stat-card">
+                            <div class="stat-value">{{ total_size_mb }} MB</div>
+                            <div class="stat-label">Tamanho Total</div>
+                        </div>
+                    </div>
+                    <div class="mdl-cell mdl-cell--3-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp stat-card">
+                            <div class="stat-value {% if http_stats.failed_requests == 0 %}color-good{% else %}color-error{% endif %}">{{ http_stats.total_requests }}</div>
+                            <div class="stat-label">Requisições HTTP</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informações do Site -->
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                    <div class="mdl-card__title">
+                        <h2 class="mdl-card__title-text">Informações do Site</h2>
+                    </div>
+                    <div class="mdl-card__supporting-text">
+                        <p><strong>URL:</strong> {{ url }}</p>
+                        <p><strong>Data da Análise:</strong> {{ datetime_now }}</p>
+                        <p><strong>Domínio:</strong> {{ domain }}</p>
+                        <p><strong>Tempo de Carregamento HTML:</strong> {{ html_load_time }} segundos</p>
+                        <p><strong>Recursos com Cache:</strong> {{ cached_resources }} ({{ cached_percent }}%)</p>
+                        <p><strong>Recursos Comprimidos:</strong> {{ compressed_resources }} ({{ compressed_percent }}%)</p>
+                    </div>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <!-- Recursos -->
+                <h4 id="resources" class="mdl-typography--display-1">Recursos por Tipo</h4>
+                
+                <div class="mdl-grid">
+                    {% for resource_type, stats in resource_stats.items() %}
+                    {% if stats.count > 0 %}
+                    <div class="mdl-cell mdl-cell--4-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                            <div class="mdl-card__title">
+                                <h2 class="mdl-card__title-text">{{ resource_type|upper }}</h2>
+                            </div>
+                            <div class="mdl-card__supporting-text">
+                                <p><strong>Quantidade:</strong> {{ stats.count }}</p>
+                                <p><strong>Tamanho Total:</strong> {{ stats.total_size_kb }} KB</p>
+                                <p><strong>Tempo Médio:</strong> {{ stats.avg_time }} segundos</p>
+                                {% if resource_type == 'images' and stats.formats %}
+                                <p><strong>Formatos:</strong> 
+                                    {% for format, count in stats.formats.items() %}
+                                    <span class="resource-badge badge-image">{{ format }} ({{ count }})</span>
+                                    {% endfor %}
+                                </p>
+                                {% endif %}
+                                {% if resource_type == 'js' %}
+                                <p><strong>Scripts Assíncronos:</strong> {{ stats.async_scripts }}</p>
+                                <p><strong>Scripts com Defer:</strong> {{ stats.defer_scripts }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <!-- Estatísticas HTTP -->
+                <h4 id="http" class="mdl-typography--display-1">Estatísticas HTTP</h4>
+                
+                <!-- Status Codes -->
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                    <div class="mdl-card__title">
+                        <h2 class="mdl-card__title-text">Códigos de Status HTTP</h2>
+                    </div>
+                    <div class="mdl-card__supporting-text">
+                        <table class="mdl-data-table mdl-js-data-table full-width-table">
+                            <thead>
+                                <tr>
+                                    <th class="mdl-data-table__cell--non-numeric">Status Code</th>
+                                    <th>Contagem</th>
+                                    <th>Porcentagem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for status, count in http_stats.status_codes.items() %}
+                                <tr>
+                                    <td class="mdl-data-table__cell--non-numeric">
+                                        {% if 200 <= status < 300 %}
+                                        <span class="status-2xx">{{ status }}</span>
+                                        {% elif 300 <= status < 400 %}
+                                        <span class="status-3xx">{{ status }}</span>
+                                        {% elif 400 <= status < 500 %}
+                                        <span class="status-4xx">{{ status }}</span>
+                                        {% elif 500 <= status < 600 %}
+                                        <span class="status-5xx">{{ status }}</span>
+                                        {% else %}
+                                        {{ status }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ count }}</td>
+                                    <td>{{ (count / http_stats.total_requests * 100)|round(1) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Tempos de Resposta -->
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp" style="margin-top: 24px;">
+                    <div class="mdl-card__title">
+                        <h2 class="mdl-card__title-text">Tempos de Resposta</h2>
+                    </div>
+                    <div class="mdl-card__supporting-text">
+                        <div class="mdl-grid">
+                            <div class="mdl-cell mdl-cell--3-col">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ response_time_avg }} s</div>
+                                    <div class="stat-label">Média</div>
+                                </div>
+                            </div>
+                            <div class="mdl-cell mdl-cell--3-col">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ response_time_min }} s</div>
+                                    <div class="stat-label">Mínimo</div>
+                                </div>
+                            </div>
+                            <div class="mdl-cell mdl-cell--3-col">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ response_time_max }} s</div>
+                                    <div class="stat-label">Máximo</div>
+                                </div>
+                            </div>
+                            <div class="mdl-cell mdl-cell--3-col">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ response_time_stddev }} s</div>
+                                    <div class="stat-label">Desvio Padrão</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Content Types -->
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp" style="margin-top: 24px;">
+                    <div class="mdl-card__title">
+                        <h2 class="mdl-card__title-text">Tipos de Conteúdo</h2>
+                    </div>
+                    <div class="mdl-card__supporting-text">
+                        <table class="mdl-data-table mdl-js-data-table full-width-table">
+                            <thead>
+                                <tr>
+                                    <th class="mdl-data-table__cell--non-numeric">Content Type</th>
+                                    <th>Contagem</th>
+                                    <th>Porcentagem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for content_type, count in content_types.items() %}
+                                <tr>
+                                    <td class="mdl-data-table__cell--non-numeric">{{ content_type }}</td>
+                                    <td>{{ count }}</td>
+                                    <td>{{ (count / http_stats.total_requests * 100)|round(1) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <!-- APIs -->
+                <h4 id="api" class="mdl-typography--display-1">APIs e Endpoints</h4>
+                
+                {% if total_apis > 0 %}
+                {% for api_type, apis in api_data.items() %}
+                {% if apis %}
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp" style="margin-top: 24px;">
+                    <div class="mdl-card__title">
+                        <h2 class="mdl-card__title-text">{{ api_type|upper }}</h2>
+                    </div>
+                    <div class="mdl-card__supporting-text">
+                        <table class="mdl-data-table mdl-js-data-table full-width-table">
+                            <thead>
+                                <tr>
+                                    <th class="mdl-data-table__cell--non-numeric">URL</th>
+                                    <th>Status</th>
+                                    <th>Tempo (s)</th>
+                                    <th>Tamanho (KB)</th>
+                                    <th class="mdl-data-table__cell--non-numeric">Content Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for api in apis %}
+                                <tr>
+                                    <td class="mdl-data-table__cell--non-numeric" style="max-width: 300px; overflow-wrap: break-word;">{{ api.url }}</td>
+                                    <td>
+                                        {% if 200 <= api.status_code < 300 %}
+                                        <span class="status-2xx">{{ api.status_code }}</span>
+                                        {% elif 300 <= api.status_code < 400 %}
+                                        <span class="status-3xx">{{ api.status_code }}</span>
+                                        {% elif 400 <= api.status_code < 500 %}
+                                        <span class="status-4xx">{{ api.status_code }}</span>
+                                        {% elif 500 <= api.status_code < 600 %}
+                                        <span class="status-5xx">{{ api.status_code }}</span>
+                                        {% else %}
+                                        {{ api.status_code }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ api.load_time }}</td>
+                                    <td>{{ api.size_kb }}</td>
+                                    <td class="mdl-data-table__cell--non-numeric">{{ api.content_type }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% else %}
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                    <div class="mdl-card__supporting-text">
+                        <p>Nenhuma API ou endpoint detectado.</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="section-divider"></div>
+                
+                <!-- Gráficos -->
+                <h4 id="charts" class="mdl-typography--display-1">Gráficos</h4>
+                
+                <div class="mdl-grid">
+                    <!-- Gráfico de Tempo de Carregamento -->
+                    <div class="mdl-cell mdl-cell--6-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
+                            <h4>Tempo de Carregamento por Tipo de Recurso</h4>
+                            {% if graph_images.load_times %}
+                            <img src="data:image/png;base64,{{ graph_images.load_times }}" alt="Tempos de Carregamento" class="graph-img">
+                            {% else %}
+                            <p>Gráfico não disponível</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Gráfico de Distribuição de Tamanho -->
+                    <div class="mdl-cell mdl-cell--6-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
+                            <h4>Distribuição de Tamanho por Tipo de Recurso</h4>
+                            {% if graph_images.size_distribution %}
+                            <img src="data:image/png;base64,{{ graph_images.size_distribution }}" alt="Distribuição de Tamanho" class="graph-img">
+                            {% else %}
+                            <p>Gráfico não disponível</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mdl-grid">
+                    <!-- Gráfico de Status Codes -->
+                    <div class="mdl-cell mdl-cell--6-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
+                            <h4>Distribuição de Códigos de Status HTTP</h4>
+                            {% if graph_images.status_codes %}
+                            <img src="data:image/png;base64,{{ graph_images.status_codes }}" alt="Códigos de Status" class="graph-img">
+                            {% else %}
+                            <p>Gráfico não disponível</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Gráfico de TTFB -->
+                    <div class="mdl-cell mdl-cell--6-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
+                            <h4>Tempo até o Primeiro Byte (TTFB) por Tipo</h4>
+                            {% if graph_images.ttfb_distribution %}
+                            <img src="data:image/png;base64,{{ graph_images.ttfb_distribution }}" alt="TTFB" class="graph-img">
+                            {% else %}
+                            <p>Gráfico não disponível</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mdl-grid">
+                    <!-- Gráfico de APIs se disponível -->
+                    {% if graph_images.api_load_times %}
+                    <div class="mdl-cell mdl-cell--12-col">
+                        <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
+                            <h4>Tempo de Carregamento por Tipo de API</h4>
+                            <img src="data:image/png;base64,{{ graph_images.api_load_times }}" alt="Tempos de API" class="graph-img">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <!-- Recursos mais lentos -->
+                <h4 class="mdl-typography--display-1">Top 10 Recursos Mais Lentos</h4>
+                
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                    <div class="mdl-card__supporting-text">
+                        <table class="mdl-data-table mdl-js-data-table full-width-table">
+                            <thead>
+                                <tr>
+                                    <th class="mdl-data-table__cell--non-numeric">Recurso</th>
+                                    <th>Tipo</th>
+                                    <th>Tempo (s)</th>
+                                    <th>Tamanho (KB)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resource in slowest_resources %}
+                                <tr>
+                                    <td class="mdl-data-table__cell--non-numeric" style="max-width: 300px; overflow-wrap: break-word;">{{ resource.url }}</td>
+                                    <td>
+                                        <span class="resource-badge badge-{{ resource.tipo }}">{{ resource.tipo }}</span>
+                                    </td>
+                                    <td>{{ resource.load_time }}</td>
+                                    <td>{{ resource.size_kb }}</td>
+                                    <td>{{ resource.status_code }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Recursos maiores -->
+                <h4 class="mdl-typography--display-1" style="margin-top: 24px;">Top 10 Recursos Maiores</h4>
+                
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                    <div class="mdl-card__supporting-text">
+                        <table class="mdl-data-table mdl-js-data-table full-width-table">
+                            <thead>
+                                <tr>
+                                    <th class="mdl-data-table__cell--non-numeric">Recurso</th>
+                                    <th>Tipo</th>
+                                    <th>Tamanho (KB)</th>
+                                    <th>Tempo (s)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resource in largest_resources %}
+                                <tr>
+                                    <td class="mdl-data-table__cell--non-numeric" style="max-width: 300px; overflow-wrap: break-word;">{{ resource.url }}</td>
+                                    <td>
+                                        <span class="resource-badge badge-{{ resource.tipo }}">{{ resource.tipo }}</span>
+                                    </td>
+                                    <td>{{ resource.size_kb }}</td>
+                                    <td>{{ resource.load_time }}</td>
+                                    <td>{{ resource.status_code }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Seção de Lista Completa de Recursos -->
+                <div class="section-divider"></div>
+                <h4 class="mdl-typography--display-1" style="margin-top: 24px;">Lista Completa de Recursos</h4>
+                
+                <div class="demo-card-wide mdl-card mdl-shadow--2dp">
+                    <div class="mdl-card__supporting-text">
+                        <div style="overflow-x: auto;">
+                            <table class="mdl-data-table mdl-js-data-table full-width-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Tipo</th>
+                                        <th class="mdl-data-table__cell--non-numeric">URL</th>
+                                        <th>Tamanho (KB)</th>
+                                        <th>Tempo (ms)</th>
+                                        <th>MIME Type</th>
+                                        <th>Status</th>
+                                        <th>Cache</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in all_resources %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            <span class="resource-badge badge-{{ resource.tipo }}">{{ resource.tipo }}</span>
+                                        </td>
+                                        <td class="mdl-data-table__cell--non-numeric" style="max-width: 300px; overflow-wrap: break-word;">{{ resource.url }}</td>
+                                        <td>{{ resource.tamanho_kb }}</td>
+                                        <td>{{ resource.tempo_ms }}</td>
+                                        <td>{{ resource.mime_type }}</td>
+                                        <td>{{ resource.status }}</td>
+                                        <td>{{ resource.cache }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <footer style="margin-top: 48px; text-align: center; color: #b0b0b0;">
+                    <p>pyFormanceTester - Gerado em {{ datetime_now }} - desenvolvido por <a href="https://www.jaccon.com.br"> André Jaccon </a></p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Configure os gráficos baseado no tema
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(function() {
+            // Aplique o tema adequado a todos os gráficos (se houver)
+            if (document.querySelectorAll('.graph-img').length) {
+                document.querySelectorAll('.graph-img').forEach(function(img) {
+                    {% if theme == 'dark' %}
+                    // Filtros para o tema escuro
+                    img.style.filter = "brightness(0.85) contrast(1.2)";
+                    {% else %}
+                    // Nenhum filtro para o tema claro
+                    img.style.filter = "none";
+                    {% endif %}
+                });
+            }
+        });
+    </script>
+</body>
+</html>
