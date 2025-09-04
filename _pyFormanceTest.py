@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -28,13 +30,20 @@ init(autoreset=True)
 
 
 class WebsitePerformanceTester:
-    def __init__(self, url, output_dir="reports"):
+    def __init__(self, url, output_dir="reports", progress_callback=None):
         """
         Inicializa o testador de desempenho com a URL fornecida
+        
+        Args:
+            url (str): URL do site a ser analisado
+            output_dir (str): Diretório onde os relatórios serão salvos
+            progress_callback (callable): Função de callback para atualizar o progresso
+                                        Recebe: (percent, message, resource_info)
         """
         self.url = url
         self.base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
         self.domain = urlparse(url).netloc
+        self.progress_callback = progress_callback
         # Carregar as configurações do arquivo config.json
         self.config = self._load_config()
         self.resources = {
@@ -82,14 +91,25 @@ class WebsitePerformanceTester:
         
         # Criar diretórios de relatórios se não existirem
         self.graphs_dir = f"{output_dir}/graphs"
-        self.templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
         
+        # Primeiro, procurar templates no diretório do script
+        script_templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+        
+        # Em seguida, verificar se existe o diretório "templates" no diretório atual (para o Flask)
+        current_templates_dir = os.path.join(os.getcwd(), "templates")
+        
+        # Usar o diretório de templates que contém o arquivo report_template.html
+        if os.path.exists(os.path.join(current_templates_dir, "report_template.html")):
+            self.templates_dir = current_templates_dir
+        else:
+            self.templates_dir = script_templates_dir
+            
+        print(f"Usando diretório de templates: {self.templates_dir}")
+            
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         if not os.path.exists(self.graphs_dir):
             os.makedirs(self.graphs_dir)
-        if not os.path.exists(self.templates_dir):
-            os.makedirs(self.templates_dir)
     
     def _load_config(self):
         """
@@ -124,6 +144,10 @@ class WebsitePerformanceTester:
         start_time = time.time()
         
         try:
+            # Atualizar progresso - Iniciando análise
+            if self.progress_callback:
+                self.progress_callback(5, "Iniciando requisição para o site...", {"url": self.url})
+            
             # Requisição inicial para obter o HTML da página
             response = self.session.get(self.url)
             response.raise_for_status()
@@ -135,15 +159,29 @@ class WebsitePerformanceTester:
             print(f"{Fore.GREEN}HTML carregado em {html_load_time:.2f} segundos")
             print(f"{Fore.GREEN}Tamanho da página HTML: {self.page_size/1024:.2f} KB")
             
+            # Atualizar progresso - HTML carregado
+            if self.progress_callback:
+                self.progress_callback(15, "HTML principal carregado, analisando conteúdo...", 
+                                     {"size": f"{self.page_size/1024:.2f} KB", 
+                                      "time": f"{html_load_time:.2f} s"})
+            
             # Registrar a requisição inicial nas estatísticas HTTP
             self._record_http_stats(response, html_load_time)
             
             # Parse do HTML
             soup = BeautifulSoup(response.content, 'html.parser')
             
+            # Atualizar progresso - Extração de recursos
+            if self.progress_callback:
+                self.progress_callback(25, "Extraindo informações sobre recursos (imagens, scripts, estilos)...", {})
+            
             # Extrair recursos
             self._extract_resources(soup)
             
+            # Atualizar progresso - Detecção de APIs
+            if self.progress_callback:
+                self.progress_callback(60, "Analisando possíveis APIs e endpoints...", {})
+                
             # Procurar possíveis APIs no JavaScript
             self._detect_apis(soup)
             
@@ -379,6 +417,9 @@ class WebsitePerformanceTester:
         print(f"{Fore.YELLOW}Extraindo recursos da página...")
         
         # Extrair imagens
+        if self.progress_callback:
+            self.progress_callback(30, "Analisando imagens da página...", {"type": "images"})
+            
         for img in soup.find_all('img'):
             src = img.get('src')
             if src:
@@ -392,8 +433,16 @@ class WebsitePerformanceTester:
                     'loading': img.get('loading', '')
                 }
                 self.resources['images'].append(img_data)
+                
+                # Atualizar com a imagem atual sendo analisada (a cada 5 imagens)
+                if self.progress_callback and len(self.resources['images']) % 5 == 0:
+                    self.progress_callback(30, f"Analisando imagens ({len(self.resources['images'])} encontradas)...", 
+                                         {"type": "images", "url": full_url})
         
         # Extrair CSS
+        if self.progress_callback:
+            self.progress_callback(35, "Analisando arquivos de estilo (CSS)...", {"type": "css"})
+            
         for css in soup.find_all('link', rel='stylesheet'):
             href = css.get('href')
             if href:
@@ -404,8 +453,16 @@ class WebsitePerformanceTester:
                     'media': css.get('media', 'all'),
                     'integrity': css.get('integrity', '')
                 })
+                
+                # Atualizar com o CSS atual sendo analisado
+                if self.progress_callback:
+                    self.progress_callback(35, f"Analisando CSS: {full_url.split('/')[-1]}", 
+                                         {"type": "css", "url": full_url})
         
         # Extrair JavaScript
+        if self.progress_callback:
+            self.progress_callback(40, "Analisando scripts JavaScript...", {"type": "js"})
+            
         for script in soup.find_all('script', src=True):
             src = script.get('src')
             if src:
@@ -417,6 +474,12 @@ class WebsitePerformanceTester:
                     'defer': 'defer' if script.get('defer') else 'false',
                     'type': script.get('type', 'text/javascript')
                 })
+                
+                # Atualizar com o script atual sendo analisado
+                if self.progress_callback:
+                    script_name = full_url.split('/')[-1]
+                    self.progress_callback(40, f"Analisando script: {script_name}", 
+                                         {"type": "js", "url": full_url})
         
         # Extrair fontes
         for font in soup.find_all('link', rel=lambda x: x and 'font' in x):
@@ -468,12 +531,29 @@ class WebsitePerformanceTester:
         print(f"  - Fontes: {len(self.resources['fonts'])}")
         print(f"  - Vídeos: {len(self.resources['videos'])}")
         print(f"  - Outros: {len(self.resources['others'])}")
+        
+        # Atualizar progresso com resumo dos recursos encontrados
+        if self.progress_callback:
+            total_resources = sum(len(resources) for resources in self.resources.values())
+            resource_summary = {
+                "images": len(self.resources['images']),
+                "css": len(self.resources['css']),
+                "js": len(self.resources['js']),
+                "fonts": len(self.resources['fonts']),
+                "videos": len(self.resources['videos']),
+                "others": len(self.resources['others']),
+                "total": total_resources
+            }
+            self.progress_callback(45, f"Total de {total_resources} recursos encontrados", resource_summary)
 
     def _analyze_resources(self):
         """
         Analisa cada recurso encontrado para obter tamanho, tempo de carregamento e métricas detalhadas
         """
         print(f"{Fore.YELLOW}Analisando recursos...")
+        
+        if self.progress_callback:
+            self.progress_callback(50, "Analisando tempos de carregamento dos recursos...", {})
         
         all_resources = []
         for resource_type, resources in self.resources.items():
@@ -550,16 +630,10 @@ class WebsitePerformanceTester:
             # Informações de conexão
             resource['connection'] = headers.get('connection', 'not-specified')
             
-            # Tentar obter o tamanho do recurso
-            if 'content-length' in headers:
-                size = int(headers['content-length'])
-            else:
-                # Se o content-length não estiver disponível, fazer download do recurso
-                if not hasattr(response, 'content'):
-                    response = self.session.get(resource['url'], timeout=10)
-                size = len(response.content)
-            
-            # Adicionar informações básicas ao recurso
+            # Sempre usar o tamanho real do conteúdo baixado
+            if not hasattr(response, 'content'):
+                response = self.session.get(resource['url'], timeout=10)
+            size = len(response.content)
             resource['size'] = size
             resource['load_time'] = load_time
             resource['status_code'] = response.status_code
@@ -655,11 +729,19 @@ class WebsitePerformanceTester:
             resource['error'] = str(e)
             self.http_stats["failed_requests"] += 1
 
-    def generate_report(self):
+    def generate_report(self, fixed_name=False):
         """
         Gera relatório CSV com os resultados da análise e gráficos
+        
+        Args:
+            fixed_name (bool): Se True, usa um nome fixo para o relatório HTML
         """
-        timestamp = self.report_timestamp
+        # Atualizar progresso - Iniciando geração de relatório
+        if self.progress_callback:
+            self.progress_callback(75, "Gerando relatórios de performance...", {})
+        
+        # Se fixed_name for True, usar um nome consistente para o relatório HTML
+        timestamp = "latest" if fixed_name else self.report_timestamp
         domain = self.domain.replace(".", "_")
         
         # Gerar relatório CSV principal
@@ -805,21 +887,51 @@ class WebsitePerformanceTester:
         """
         Gera um relatório HTML com Material Design
         """
-        # Verificar se o template existe
+        # Atualizar progresso - Gerando relatório HTML
+        if self.progress_callback:
+            self.progress_callback(90, "Gerando relatório HTML interativo...", {})
+            
+        # Adicionar filtro tojson ao Jinja2
+        import json as _json
+        def tojson_filter(value):
+            return _json.dumps(value, ensure_ascii=False)
+        # Carregar o template
         template_path = os.path.join(self.templates_dir, 'report_template.html')
         if not os.path.exists(template_path):
             print(f"{Fore.RED}Erro: Template HTML não encontrado em {template_path}")
-            return
-        
-        self.report_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+            
+            # Tentar encontrar o template em outros diretórios
+            possible_paths = [
+                os.path.join(os.getcwd(), "templates", "report_template.html"),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "report_template.html")
+            ]
+            
+            template_found = False
+            for path in possible_paths:
+                if os.path.exists(path):
+                    print(f"{Fore.GREEN}Template encontrado em caminho alternativo: {path}")
+                    template_path = path
+                    template_found = True
+                    break
+            
+            if not template_found:
+                print(f"{Fore.RED}Erro: Não foi possível encontrar o template HTML em nenhum diretório conhecido")
+                return
+                
         try:
-            # Carregar o template
             with open(template_path, 'r', encoding='utf-8') as file:
                 template_content = file.read()
-            
-            template = Template(template_content)
-            
+            env = Environment()
+            env.filters['tojson'] = tojson_filter
+            template = env.from_string(template_content)
+            print(f"{Fore.GREEN}Template HTML carregado com sucesso de {template_path}")
+        except Exception as e:
+            print(f"{Fore.RED}Erro ao carregar template HTML: {e}")
+            return
+
+        self.report_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        try:
             # Calcular estatísticas para o template
             total_resources = sum(len(resources) for resources in self.resources.values())
             total_size = self.page_size + sum(
@@ -984,9 +1096,45 @@ class WebsitePerformanceTester:
                             'cache': api.get('cache_control', 'N/A')
                         })
             
+            # Ordenar a lista completa de recursos por tamanho_kb (decrescente)
+            all_resources = sorted(all_resources, key=lambda x: x.get('tamanho_kb', 0), reverse=True)
+
+            # Preparar dados para gráficos dinâmicos (Chart.js)
+            # 1. Tempo de carregamento por tipo de recurso
+            chart_load_times_labels = []
+            chart_load_times_data = []
+            for resource_type, stats in resource_stats.items():
+                chart_load_times_labels.append(resource_type.upper())
+                chart_load_times_data.append(stats['avg_time'])
+
+            # 2. Distribuição de tamanho por tipo de recurso
+            chart_size_labels = []
+            chart_size_data = []
+            for resource_type, stats in resource_stats.items():
+                chart_size_labels.append(resource_type.upper())
+                chart_size_data.append(stats['total_size_kb'])
+
+            # 3. Distribuição de códigos de status HTTP
+            chart_status_labels = list(self.http_stats['status_codes'].keys())
+            chart_status_data = list(self.http_stats['status_codes'].values())
+
+            # 4. Distribuição de tipos de conteúdo (top 10)
+            top_content_types = sorted(self.http_stats['content_types'].items(), key=lambda x: x[1], reverse=True)[:10]
+            chart_content_types_labels = [ct[0] for ct in top_content_types]
+            chart_content_types_data = [ct[1] for ct in top_content_types]
+
+            # 5. Dados para gráfico de APIs se houver
+            chart_api_labels = []
+            chart_api_data = []
+            for api_type, apis in api_data.items():
+                if apis:
+                    avg_time = sum(api['load_time'] for api in apis) / len(apis)
+                    chart_api_labels.append(api_type.upper())
+                    chart_api_data.append(round(avg_time, 2))
+
             # Obter o tema das configurações
             theme = self.config.get('theme', 'default')
-            
+
             # Renderizar o template
             rendered_html = template.render(
                 title=f"PyFormanceTester - {self.domain}",
@@ -1014,7 +1162,17 @@ class WebsitePerformanceTester:
                 largest_resources=largest_resources,
                 graph_images=self.graph_images,
                 all_resources=all_resources,  # Adicionando a lista completa de recursos
-                theme=theme  # Passando o tema das configurações para o template
+                theme=theme,  # Passando o tema das configurações para o template
+                chart_load_times_labels=chart_load_times_labels,
+                chart_load_times_data=chart_load_times_data,
+                chart_size_labels=chart_size_labels,
+                chart_size_data=chart_size_data,
+                chart_status_labels=chart_status_labels,
+                chart_status_data=chart_status_data,
+                chart_content_types_labels=chart_content_types_labels,
+                chart_content_types_data=chart_content_types_data,
+                chart_api_labels=chart_api_labels,
+                chart_api_data=chart_api_data
             )
             
             # Salvar o HTML
@@ -1030,6 +1188,16 @@ class WebsitePerformanceTester:
             print(f"{Fore.RED}Erro ao gerar relatório HTML: {e}")
             import traceback
             traceback.print_exc()
+            
+            # Log detalhado para ajudar a diagnosticar o problema
+            print(f"{Fore.RED}=== Detalhes do erro ===")
+            print(f"{Fore.RED}Diretório de templates: {self.templates_dir}")
+            print(f"{Fore.RED}Caminho do template: {template_path}")
+            print(f"{Fore.RED}Template existe: {os.path.exists(template_path)}")
+            print(f"{Fore.RED}Diretório atual: {os.getcwd()}")
+            print(f"{Fore.RED}=== Fim dos detalhes ===")
+            
+            return None  # Retorna None explicitamente em caso de erro
     
     def generate_assets_table(self):
         """
@@ -1275,6 +1443,10 @@ class WebsitePerformanceTester:
         """
         print(f"{Fore.YELLOW}Gerando gráficos de análise...")
         
+        # Atualizar progresso - Gerando gráficos
+        if self.progress_callback:
+            self.progress_callback(85, "Gerando gráficos de performance...", {"timestamp": timestamp})
+        
         try:
             # Gráfico de tempo de carregamento por tipo de recurso
             self._generate_load_time_graph(timestamp, domain)
@@ -1289,87 +1461,103 @@ class WebsitePerformanceTester:
         
         except Exception as e:
             print(f"{Fore.RED}Erro ao gerar gráficos: {e}")
+            # Fechar todas as figuras pendentes do matplotlib em caso de erro
+            plt.close('all')
     
     def _generate_load_time_graph(self, timestamp, domain):
         """
         Gera gráfico de tempo de carregamento por tipo de recurso
         """
-        plt.figure(figsize=(12, 6))
-        
         # Coletar dados para o gráfico
         resource_types = []
         avg_times = []
         max_times = []
         
-        for resource_type, resources in self.resources.items():
-            if resources:
-                resource_types.append(resource_type)
-                times = [resource.get('load_time', 0) for resource in resources]
-                avg_times.append(sum(times) / len(times))
-                max_times.append(max(times))
-        
-        # API tempos
-        api_types = []
-        api_avg_times = []
-        api_max_times = []
-        
-        for api_type, apis in self.apis.items():
-            if apis:
-                analyzed_apis = [api for api in apis if api.get('analyzed', False)]
-                if analyzed_apis:
-                    api_types.append(api_type)
-                    times = [api.get('load_time', 0) for api in analyzed_apis]
-                    api_avg_times.append(sum(times) / len(times))
-                    api_max_times.append(max(times))
-        
-        # Cores Material Design
-        colors = {
-            'primary': '#1976D2',   # Azul
-            'secondary': '#FF5722', # Laranja
-            'success': '#4CAF50',   # Verde
-            'warning': '#FFC107',   # Amarelo
-            'error': '#F44336'      # Vermelho
-        }
-        
-        # Gráfico para recursos
-        x = range(len(resource_types))
-        plt.bar(x, avg_times, width=0.4, label='Tempo Médio', color=colors['primary'], alpha=0.7)
-        plt.bar([i + 0.4 for i in x], max_times, width=0.4, label='Tempo Máximo', color=colors['error'], alpha=0.7)
-        
-        plt.xlabel('Tipo de Recurso')
-        plt.ylabel('Tempo (segundos)')
-        plt.title('Tempo de Carregamento por Tipo de Recurso')
-        plt.xticks([i + 0.2 for i in x], resource_types)
-        plt.legend()
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        
-        # Salvar o gráfico como arquivo e em base64
-        file_path = f"{self.graphs_dir}/load_times_{domain}_{timestamp}.png"
-        plt.savefig(file_path, dpi=100)
-        self.graph_images['load_times'] = self._fig_to_base64(plt.gcf())
-        plt.close()
-        
-        # Gráfico para APIs se houver dados
-        if api_types:
+        try:
             plt.figure(figsize=(12, 6))
-            x = range(len(api_types))
-            plt.bar(x, api_avg_times, width=0.4, label='Tempo Médio', color=colors['success'], alpha=0.7)
-            plt.bar([i + 0.4 for i in x], api_max_times, width=0.4, label='Tempo Máximo', color=colors['warning'], alpha=0.7)
             
-            plt.xlabel('Tipo de API')
-            plt.ylabel('Tempo (segundos)')
-            plt.title('Tempo de Carregamento por Tipo de API')
-            plt.xticks([i + 0.2 for i in x], api_types)
-            plt.legend()
-            plt.grid(axis='y', linestyle='--', alpha=0.7)
-            plt.tight_layout()
+            for resource_type, resources in self.resources.items():
+                if resources:
+                    # Filtrar tempos para evitar valores nulos/inválidos
+                    valid_times = [resource.get('load_time', 0) for resource in resources if resource.get('load_time', 0) > 0]
+                    if valid_times:  # Verificar se há tempos válidos
+                        resource_types.append(resource_type)
+                        avg_times.append(sum(valid_times) / len(valid_times) if valid_times else 0)
+                        max_times.append(max(valid_times) if valid_times else 0)
             
-            # Salvar o gráfico como arquivo e em base64
-            file_path = f"{self.graphs_dir}/api_load_times_{domain}_{timestamp}.png"
-            plt.savefig(file_path, dpi=100)
-            self.graph_images['api_load_times'] = self._fig_to_base64(plt.gcf())
-            plt.close()
+            # API tempos
+            api_types = []
+            api_avg_times = []
+            api_max_times = []
+            
+            for api_type, apis in self.apis.items():
+                if apis:
+                    analyzed_apis = [api for api in apis if api.get('analyzed', False)]
+                    if analyzed_apis:
+                        # Filtrar tempos para evitar valores nulos/inválidos
+                        valid_times = [api.get('load_time', 0) for api in analyzed_apis if api.get('load_time', 0) > 0]
+                        if valid_times:  # Verificar se há tempos válidos
+                            api_types.append(api_type)
+                            api_avg_times.append(sum(valid_times) / len(valid_times) if valid_times else 0)
+                            api_max_times.append(max(valid_times) if valid_times else 0)
+            
+            # Cores Material Design
+            colors = {
+                'primary': '#1976D2',   # Azul
+                'secondary': '#FF5722', # Laranja
+                'success': '#4CAF50',   # Verde
+                'warning': '#FFC107',   # Amarelo
+                'error': '#F44336'      # Vermelho
+            }
+            
+            # Verificar se há dados para plotar
+            if resource_types:
+                # Gráfico para recursos
+                x = range(len(resource_types))
+                plt.bar(x, avg_times, width=0.4, label='Tempo Médio', color=colors['primary'], alpha=0.7)
+                plt.bar([i + 0.4 for i in x], max_times, width=0.4, label='Tempo Máximo', color=colors['error'], alpha=0.7)
+                
+                plt.xlabel('Tipo de Recurso')
+                plt.ylabel('Tempo (segundos)')
+                plt.title('Tempo de Carregamento por Tipo de Recurso')
+                plt.xticks([i + 0.2 for i in x], resource_types)
+                plt.legend()
+                plt.grid(axis='y', linestyle='--', alpha=0.7)
+                plt.tight_layout()
+                
+                # Salvar o gráfico como arquivo e em base64
+                file_path = f"{self.graphs_dir}/load_times_{domain}_{timestamp}.png"
+                plt.savefig(file_path, dpi=100)
+                self.graph_images['load_times'] = self._fig_to_base64(plt.gcf())
+                plt.close()
+            else:
+                print(f"{Fore.YELLOW}Aviso: Não há dados de recursos suficientes para gerar gráfico de tempo de carregamento")
+            
+            # Gráfico para APIs se houver dados
+            if api_types:
+                plt.figure(figsize=(12, 6))
+                x = range(len(api_types))
+                plt.bar(x, api_avg_times, width=0.4, label='Tempo Médio', color=colors['success'], alpha=0.7)
+                plt.bar([i + 0.4 for i in x], api_max_times, width=0.4, label='Tempo Máximo', color=colors['warning'], alpha=0.7)
+                
+                plt.xlabel('Tipo de API')
+                plt.ylabel('Tempo (segundos)')
+                plt.title('Tempo de Carregamento por Tipo de API')
+                plt.xticks([i + 0.2 for i in x], api_types)
+                plt.legend()
+                plt.grid(axis='y', linestyle='--', alpha=0.7)
+                plt.tight_layout()
+                
+                # Salvar o gráfico como arquivo e em base64
+                file_path = f"{self.graphs_dir}/api_load_times_{domain}_{timestamp}.png"
+                plt.savefig(file_path, dpi=100)
+                self.graph_images['api_load_times'] = self._fig_to_base64(plt.gcf())
+                plt.close()
+                
+        except Exception as e:
+            print(f"{Fore.RED}Erro ao gerar gráfico de tempos de carregamento: {str(e)}")
+            # Fechar qualquer figura pendente em caso de erro
+            plt.close('all')
     
     def _fig_to_base64(self, fig):
         """
@@ -1386,103 +1574,127 @@ class WebsitePerformanceTester:
         """
         Gera gráfico de distribuição de códigos de status HTTP
         """
-        if not self.http_stats['status_codes']:
-            return
-        
-        plt.figure(figsize=(10, 6))
-        
-        status_codes = list(self.http_stats['status_codes'].keys())
-        counts = list(self.http_stats['status_codes'].values())
-        
-        # Definir cores Material Design com base nas faixas de status
-        colors = ['#4CAF50' if code == 200 else      # Verde para 200
-                 '#2196F3' if 200 <= code < 300 else # Azul para 2xx
-                 '#FF9800' if 300 <= code < 400 else # Laranja para 3xx
-                 '#F44336' if 400 <= code < 500 else # Vermelho para 4xx
-                 '#9C27B0' if 500 <= code < 600 else # Roxo para 5xx
-                 '#9E9E9E' for code in status_codes] # Cinza para outros
-        
-        plt.bar(status_codes, counts, color=colors)
-        
-        plt.xlabel('Código de Status HTTP')
-        plt.ylabel('Número de Requisições')
-        plt.title('Distribuição de Códigos de Status HTTP')
-        plt.xticks(status_codes)
-        plt.grid(axis='y', linestyle='--', alpha=0.3)
-        
-        # Adicionar rótulos de contagem acima das barras
-        for i, count in enumerate(counts):
-            plt.text(status_codes[i], count + 0.1, str(count), ha='center')
-        
-        plt.tight_layout()
-        
-        # Salvar o gráfico como arquivo e em base64
-        file_path = f"{self.graphs_dir}/status_codes_{domain}_{timestamp}.png"
-        plt.savefig(file_path, dpi=100)
-        self.graph_images['status_codes'] = self._fig_to_base64(plt.gcf())
-        plt.close()
+        try:
+            if not self.http_stats['status_codes']:
+                print(f"{Fore.YELLOW}Aviso: Não há dados de status HTTP para gerar gráfico")
+                return
+            
+            plt.figure(figsize=(10, 6))
+            
+            status_codes = list(self.http_stats['status_codes'].keys())
+            counts = list(self.http_stats['status_codes'].values())
+            
+            if not status_codes or not counts:
+                print(f"{Fore.YELLOW}Aviso: Não há códigos de status HTTP para gerar gráfico")
+                plt.close()
+                return
+            
+            # Definir cores Material Design com base nas faixas de status
+            colors = ['#4CAF50' if code == 200 else      # Verde para 200
+                     '#2196F3' if 200 <= code < 300 else # Azul para 2xx
+                     '#FF9800' if 300 <= code < 400 else # Laranja para 3xx
+                     '#F44336' if 400 <= code < 500 else # Vermelho para 4xx
+                     '#9C27B0' if 500 <= code < 600 else # Roxo para 5xx
+                     '#9E9E9E' for code in status_codes] # Cinza para outros
+            
+            plt.bar(status_codes, counts, color=colors)
+            
+            plt.xlabel('Código de Status HTTP')
+            plt.ylabel('Número de Requisições')
+            plt.title('Distribuição de Códigos de Status HTTP')
+            plt.xticks(status_codes)
+            plt.grid(axis='y', linestyle='--', alpha=0.3)
+            
+            # Adicionar rótulos de contagem acima das barras
+            for i, count in enumerate(counts):
+                plt.text(status_codes[i], count + 0.1, str(count), ha='center')
+            
+            plt.tight_layout()
+            
+            # Salvar o gráfico como arquivo e em base64
+            file_path = f"{self.graphs_dir}/status_codes_{domain}_{timestamp}.png"
+            plt.savefig(file_path, dpi=100)
+            self.graph_images['status_codes'] = self._fig_to_base64(plt.gcf())
+            plt.close()
+            
+        except Exception as e:
+            print(f"{Fore.RED}Erro ao gerar gráfico de códigos de status: {str(e)}")
+            # Fechar qualquer figura pendente em caso de erro
+            plt.close('all')
     
     def _generate_size_distribution_graph(self, timestamp, domain):
         """
         Gera gráfico de distribuição de tamanho por tipo de recurso
         """
-        plt.figure(figsize=(10, 6))
-        
-        # Coletar dados para o gráfico
-        resource_types = []
-        total_sizes_kb = []
-        
-        for resource_type, resources in self.resources.items():
-            if resources:
-                resource_types.append(resource_type)
-                total_size = sum(resource.get('size', 0) for resource in resources) / 1024  # em KB
-                total_sizes_kb.append(total_size)
-        
-        # Cores Material Design para o gráfico de pizza
-        colors = ['#2196F3', '#4CAF50', '#FFC107', '#F44336', '#9C27B0', '#FF5722']
-        
-        # Gráfico de pizza
-        plt.pie(total_sizes_kb, labels=resource_types, autopct='%1.1f%%',
-               shadow=True, startangle=140, explode=[0.05] * len(resource_types),
-               colors=colors[:len(resource_types)])
-        
-        plt.axis('equal')
-        plt.title('Distribuição de Tamanho por Tipo de Recurso (KB)')
-        plt.tight_layout()
-        
-        # Salvar o gráfico como arquivo e em base64
-        file_path = f"{self.graphs_dir}/size_distribution_{domain}_{timestamp}.png"
-        plt.savefig(file_path, dpi=100)
-        self.graph_images['size_distribution'] = self._fig_to_base64(plt.gcf())
-        plt.close()
-        
-        # Criar um gráfico de barras para os tempos médios de resposta
-        plt.figure(figsize=(10, 6))
-        
-        resource_types_with_times = []
-        avg_response_times = []
-        
-        for resource_type, resources in self.resources.items():
-            if resources:
-                resource_types_with_times.append(resource_type)
-                times = [resource.get('time_to_first_byte', 0) for resource in resources if resource.get('time_to_first_byte')]
-                if times:
-                    avg_response_times.append(sum(times) / len(times))
-                else:
-                    avg_response_times.append(0)
-        
-        plt.bar(resource_types_with_times, avg_response_times, color='#673AB7')
-        plt.xlabel('Tipo de Recurso')
-        plt.ylabel('Tempo até o Primeiro Byte (s)')
-        plt.title('Tempo Médio de Resposta (TTFB) por Tipo de Recurso')
-        plt.grid(axis='y', linestyle='--', alpha=0.3)
-        plt.tight_layout()
-        
-        # Salvar o gráfico como arquivo e em base64
-        file_path = f"{self.graphs_dir}/ttfb_distribution_{domain}_{timestamp}.png"
-        plt.savefig(file_path, dpi=100)
-        self.graph_images['ttfb_distribution'] = self._fig_to_base64(plt.gcf())
-        plt.close()
+        try:
+            # Coletar dados para o gráfico
+            resource_types = []
+            total_sizes_kb = []
+            
+            for resource_type, resources in self.resources.items():
+                if resources:
+                    resource_types.append(resource_type)
+                    total_size = sum(resource.get('size', 0) for resource in resources) / 1024  # em KB
+                    total_sizes_kb.append(total_size)
+            
+            # Verificar se há dados suficientes para criar o gráfico
+            if not resource_types or not total_sizes_kb or sum(total_sizes_kb) == 0:
+                print(f"{Fore.YELLOW}Aviso: Não há dados de tamanho suficientes para gerar gráfico de distribuição")
+                return
+                
+            plt.figure(figsize=(10, 6))
+            
+            # Cores Material Design para o gráfico de pizza
+            colors = ['#2196F3', '#4CAF50', '#FFC107', '#F44336', '#9C27B0', '#FF5722']
+            
+            # Gráfico de pizza
+            plt.pie(total_sizes_kb, labels=resource_types, autopct='%1.1f%%',
+                   shadow=True, startangle=140, explode=[0.05] * len(resource_types),
+                   colors=colors[:len(resource_types)])
+            
+            plt.axis('equal')
+            plt.title('Distribuição de Tamanho por Tipo de Recurso (KB)')
+            plt.tight_layout()
+            
+            # Salvar o gráfico como arquivo e em base64
+            file_path = f"{self.graphs_dir}/size_distribution_{domain}_{timestamp}.png"
+            plt.savefig(file_path, dpi=100)
+            self.graph_images['size_distribution'] = self._fig_to_base64(plt.gcf())
+            plt.close()
+            
+            # Verificar dados para o gráfico TTFB
+            resource_types_with_times = []
+            avg_response_times = []
+            
+            for resource_type, resources in self.resources.items():
+                if resources:
+                    times = [resource.get('time_to_first_byte', 0) for resource in resources if resource.get('time_to_first_byte')]
+                    if times:
+                        resource_types_with_times.append(resource_type)
+                        avg_response_times.append(sum(times) / len(times))
+            
+            # Verificar se há dados suficientes para criar o gráfico TTFB
+            if resource_types_with_times and avg_response_times:
+                plt.figure(figsize=(10, 6))
+                plt.bar(resource_types_with_times, avg_response_times, color='#673AB7')
+                plt.xlabel('Tipo de Recurso')
+                plt.ylabel('Tempo até o Primeiro Byte (s)')
+                plt.title('Tempo Médio de Resposta (TTFB) por Tipo de Recurso')
+                plt.grid(axis='y', linestyle='--', alpha=0.3)
+                plt.tight_layout()
+                
+                # Salvar o gráfico como arquivo e em base64
+                file_path = f"{self.graphs_dir}/ttfb_distribution_{domain}_{timestamp}.png"
+                plt.savefig(file_path, dpi=100)
+                self.graph_images['ttfb_distribution'] = self._fig_to_base64(plt.gcf())
+                plt.close()
+            else:
+                print(f"{Fore.YELLOW}Aviso: Não há dados TTFB suficientes para gerar gráfico")
+                
+        except Exception as e:
+            print(f"{Fore.RED}Erro ao gerar gráficos de distribuição: {str(e)}")
+            # Fechar qualquer figura pendente em caso de erro
+            plt.close('all')
 
     def print_summary(self):
         """
@@ -1693,22 +1905,25 @@ def main():
     
     print(f"{Fore.GREEN}Análise completa! Relatórios salvos.")
     print(f"{Fore.GREEN}Relatório CSV: {csv_report}")
-    print(f"{Fore.GREEN}Relatório HTML: {html_report}")
-    
-    # Sugerir abrir o relatório HTML
-    if os.path.exists(html_report):
-        print(f"\n{Fore.CYAN}Para visualizar o relatório HTML completo com gráficos, execute:")
-        print(f"{Fore.YELLOW}open {html_report}")
-        
-        # Abrir automaticamente o relatório HTML no navegador padrão
-        if not args.no_html:
-            try:
-                print(f"\n{Fore.CYAN}Abrindo relatório HTML no navegador padrão...")
-                html_absolute_path = os.path.abspath(html_report)
-                webbrowser.open(f"file://{html_absolute_path}")
-            except Exception as e:
-                print(f"{Fore.YELLOW}Não foi possível abrir o navegador: {str(e)}")
-                pass
+    if html_report:
+        print(f"{Fore.GREEN}Relatório HTML: {html_report}")
+        # Sugerir abrir o relatório HTML
+        if os.path.exists(html_report):
+            print(f"\n{Fore.CYAN}Para visualizar o relatório HTML completo com gráficos, execute:")
+            print(f"{Fore.YELLOW}open {html_report}")
+            # Abrir automaticamente o relatório HTML no navegador padrão
+            if not args.no_html:
+                try:
+                    print(f"\n{Fore.CYAN}Abrindo relatório HTML no navegador padrão...")
+                    html_absolute_path = os.path.abspath(html_report)
+                    webbrowser.open(f"file://{html_absolute_path}")
+                except Exception as e:
+                    print(f"{Fore.YELLOW}Não foi possível abrir o navegador: {str(e)}")
+                    pass
+        else:
+            print(f"{Fore.RED}O relatório HTML não foi encontrado no caminho esperado.")
+    else:
+        print(f"{Fore.RED}Relatório HTML não foi gerado devido a um erro. Verifique o log para detalhes.")
 
 
 if __name__ == "__main__":

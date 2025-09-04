@@ -31,3 +31,4 @@ ENV/
 # Generated reports folder content (except .gitkeep)
 reports/*
 !reports/.gitkeep
+

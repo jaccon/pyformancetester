@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <title>Analisando Website</title>
+    <style>
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+        }
+        .status-message {
+            margin: 20px 0;
+            font-size: 1.2em;
+            color: #1976d2;
+            min-height: 40px;
+        }
+        .progress {
+            margin: 30px 0;
+        }
+        .step-list {
+            text-align: left;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .step {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .active-step {
+            background: #e3f2fd;
+            font-weight: bold;
+        }
+        .completed-step {
+            color: #4caf50;
+        }
+        .step-icon {
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h4>Analisando seu Website</h4>
+        <div class="progress">
+            <div class="determinate" id="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="status-message" id="status-message">Iniciando análise...</div>
+        
+        <!-- Informações do recurso atual sendo analisado -->
+        <div id="current-resource-info" style="margin: 15px 0; padding: 10px; background-color: #f0f8ff; border-radius: 6px; display: none;">
+            <h6 style="margin: 0 0 10px 0; font-size: 1rem;">Recurso sendo analisado:</h6>
+            <div id="resource-details" style="font-size: 0.9rem;"></div>
+        </div>
+        
+        <div class="step-list">
+            <div class="step" id="step1">
+                <span class="step-icon">⏳</span> Coletando informações do website
+            </div>
+            <div class="step" id="step2">
+                <span class="step-icon">⌛</span> Analisando recursos (imagens, scripts, etc)
+            </div>
+            <div class="step" id="step3">
+                <span class="step-icon">⌛</span> Medindo performance e tempo de carregamento
+            </div>
+            <div class="step" id="step4">
+                <span class="step-icon">⌛</span> Gerando relatório detalhado
+            </div>
+        </div>
+        
+        <p class="grey-text">Este processo pode levar alguns minutos dependendo da complexidade do site.</p>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusMessage = document.getElementById('status-message');
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3');
+            const step4 = document.getElementById('step4');
+            let currentStep = 0;
+            
+            function checkProgress() {
+                fetch('/progress/data')
+                    .then(res => res.json())
+                    .then(data => {
+                        statusMessage.textContent = data.message || 'Processando...';
+                        
+                        // Atualizar a barra de progresso
+                        document.getElementById('progress-bar').style.width = data.percent + '%';
+                        
+                        // Atualizar informações do recurso atual sendo analisado
+                        if (data.current_resource && Object.keys(data.current_resource).length > 0) {
+                            const resourceInfo = document.getElementById('current-resource-info');
+                            const resourceDetails = document.getElementById('resource-details');
+                            resourceInfo.style.display = 'block';
+                            
+                            let detailsHTML = '';
+                            
+                            // Mostrar URL se disponível
+                            if (data.current_resource.url) {
+                                let displayUrl = data.current_resource.url;
+                                if (displayUrl.length > 60) {
+                                    displayUrl = displayUrl.substring(0, 60) + '...';
+                                }
+                                detailsHTML += `<p><strong>URL:</strong> ${displayUrl}</p>`;
+                            }
+                            
+                            // Mostrar tipo de recurso
+                            if (data.current_resource.type) {
+                                detailsHTML += `<p><strong>Tipo:</strong> ${data.current_resource.type}</p>`;
+                            }
+                            
+                            // Mostrar tamanho se disponível
+                            if (data.current_resource.size) {
+                                detailsHTML += `<p><strong>Tamanho:</strong> ${data.current_resource.size}</p>`;
+                            }
+                            
+                            // Mostrar tempo se disponível
+                            if (data.current_resource.time) {
+                                detailsHTML += `<p><strong>Tempo:</strong> ${data.current_resource.time}</p>`;
+                            }
+                            
+                            // Mostrar resumo dos recursos encontrados
+                            if (data.current_resource.images) {
+                                detailsHTML += '<p><strong>Recursos encontrados:</strong> ';
+                                detailsHTML += `${data.current_resource.images} imagens, `;
+                                detailsHTML += `${data.current_resource.css} CSS, `;
+                                detailsHTML += `${data.current_resource.js} scripts</p>`;
+                            }
+                            
+                            resourceDetails.innerHTML = detailsHTML;
+                        } else {
+                            document.getElementById('current-resource-info').style.display = 'none';
+                        }
+                        
+                        // Atualizar os passos visuais com base no progresso
+                        if (data.percent >= 5) {
+                            step1.classList.add('active-step');
+                            currentStep = 1;
+                        }
+                        if (data.percent >= 25) {
+                            step1.classList.remove('active-step');
+                            step1.classList.add('completed-step');
+                            step1.querySelector('.step-icon').textContent = '✅';
+                            step2.classList.add('active-step');
+                            currentStep = 2;
+                        }
+                        if (data.percent >= 60) {
+                            step2.classList.remove('active-step');
+                            step2.classList.add('completed-step');
+                            step2.querySelector('.step-icon').textContent = '✅';
+                            step3.classList.add('active-step');
+                            currentStep = 3;
+                        }
+                        if (data.percent >= 80) {
+                            step3.classList.remove('active-step');
+                            step3.classList.add('completed-step');
+                            step3.querySelector('.step-icon').textContent = '✅';
+                            step4.classList.add('active-step');
+                            currentStep = 4;
+                        }
+                        if (data.percent >= 100) {
+                            step4.classList.remove('active-step');
+                            step4.classList.add('completed-step');
+                            step4.querySelector('.step-icon').textContent = '✅';
+                            
+                            // Redirecionar para o resultado quando terminar
+                            setTimeout(() => {
+                                window.location.href = '/result';
+                            }, 1000);
+                        }
+                        
+                        // Se houver erro, mostrar mensagem
+                        if (data.status === 'error') {
+                            statusMessage.textContent = 'Erro: ' + data.error;
+                            statusMessage.style.color = '#f44336';
+                            return;
+                        }
+                        
+                        // Continuar checando se não estiver concluído
+                        if (data.status !== 'done') {
+                            setTimeout(checkProgress, 1000);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error checking progress:', err);
+                        setTimeout(checkProgress, 2000);
+                    });
+            }
+            
+            // Iniciar verificação de progresso
+            checkProgress();
+        });
+    </script>
+</body>
+</html>

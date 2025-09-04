@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisando Website - pyFormanceTester</title>
+    <!-- Material Design resources -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+        }
+        .status-message {
+            margin: 20px 0;
+            font-size: 1.2em;
+            color: #1976d2;
+            min-height: 40px;
+        }
+        .progress-container {
+            margin: 30px 0;
+        }
+        .step-list {
+            text-align: left;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .step {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .active-step {
+            background: #e3f2fd;
+            font-weight: bold;
+        }
+        .completed-step {
+            color: #4caf50;
+        }
+        .step-icon {
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        .resource-info {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f0f8ff;
+            border-radius: 6px;
+            text-align: left;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h4>Analisando seu Website</h4>
+        <div class="progress-container">
+            <div class="progress">
+                <div class="determinate" id="progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="status-message" id="status-message">Iniciando análise...</div>
+        </div>
+        
+        <!-- Informações do recurso atual sendo analisado -->
+        <div class="resource-info" id="resource-info">
+            <h6 style="margin: 0 0 10px 0; font-size: 1rem;">Recurso sendo analisado:</h6>
+            <div id="resource-details" style="font-size: 0.9rem;"></div>
+        </div>
+        
+        <div class="step-list">
+            <div class="step" id="step1">
+                <span class="step-icon">⏳</span> Coletando informações do website
+            </div>
+            <div class="step" id="step2">
+                <span class="step-icon">⌛</span> Analisando recursos (imagens, scripts, etc)
+            </div>
+            <div class="step" id="step3">
+                <span class="step-icon">⌛</span> Medindo performance e tempo de carregamento
+            </div>
+            <div class="step" id="step4">
+                <span class="step-icon">⌛</span> Gerando relatório detalhado
+            </div>
+        </div>
+        
+        <p class="grey-text">Este processo pode levar alguns minutos dependendo da complexidade do site.</p>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const jobId = "{{ job_id }}";
+            const statusMessage = document.getElementById('status-message');
+            const progressBar = document.getElementById('progress-bar');
+            const resourceInfo = document.getElementById('resource-info');
+            const resourceDetails = document.getElementById('resource-details');
+            const steps = [
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3'),
+                document.getElementById('step4')
+            ];
+            
+            function updateActiveStep(progress) {
+                // Reset all steps
+                steps.forEach(step => {
+                    step.classList.remove('active-step');
+                    step.classList.remove('completed-step');
+                    step.querySelector('.step-icon').textContent = '⌛';
+                });
+                
+                let activeStep = 0;
+                if (progress < 25) {
+                    activeStep = 0;
+                } else if (progress < 50) {
+                    activeStep = 1;
+                } else if (progress < 75) {
+                    activeStep = 2;
+                } else {
+                    activeStep = 3;
+                }
+                
+                // Mark steps as completed or active
+                for (let i = 0; i < steps.length; i++) {
+                    if (i < activeStep) {
+                        steps[i].classList.add('completed-step');
+                        steps[i].querySelector('.step-icon').textContent = '✅';
+                    } else if (i === activeStep) {
+                        steps[i].classList.add('active-step');
+                        steps[i].querySelector('.step-icon').textContent = '⏳';
+                    }
+                }
+            }
+            
+            function updateResourceInfo(resource) {
+                if (!resource || Object.keys(resource).length === 0) {
+                    resourceInfo.style.display = 'none';
+                    return;
+                }
+                
+                resourceInfo.style.display = 'block';
+                let html = '';
+                
+                // URL
+                if (resource.url) {
+                    let displayUrl = resource.url;
+                    if (displayUrl.length > 60) {
+                        displayUrl = displayUrl.substring(0, 60) + '...';
+                    }
+                    html += `<p><strong>URL:</strong> ${displayUrl}</p>`;
+                }
+                
+                // Tipo
+                if (resource.type) {
+                    html += `<p><strong>Tipo:</strong> ${resource.type}</p>`;
+                }
+                
+                // Estatísticas
+                if (resource.images !== undefined) {
+                    html += '<p><strong>Recursos encontrados:</strong> ';
+                    html += `${resource.images} imagens, `;
+                    html += `${resource.css} CSS, `;
+                    html += `${resource.js} scripts</p>`;
+                }
+                
+                // Timestamp
+                if (resource.timestamp) {
+                    html += `<p><strong>Timestamp:</strong> ${resource.timestamp}</p>`;
+                }
+                
+                resourceDetails.innerHTML = html;
+            }
+            
+            function checkStatus() {
+                fetch(`/job_status/${jobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update progress bar
+                        progressBar.style.width = `${data.progress}%`;
+                        
+                        // Update message
+                        statusMessage.textContent = data.message || 'Processando...';
+                        
+                        // Update resource info
+                        updateResourceInfo(data.resource_info);
+                        
+                        // Update active step
+                        updateActiveStep(data.progress);
+                        
+                        // Check job status
+                        if (data.status === 'completed') {
+                            // Redirect to results page
+                            window.location.href = `/results/${jobId}`;
+                        } else if (data.status === 'error') {
+                            statusMessage.textContent = `Erro: ${data.error}`;
+                            statusMessage.style.color = '#f44336';
+                        } else {
+                            // Continue polling
+                            setTimeout(checkStatus, 500);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking job status:', error);
+                        statusMessage.textContent = 'Erro ao conectar com o servidor. Tentando novamente...';
+                        setTimeout(checkStatus, 2000);
+                    });
+            }
+            
+            // Start checking status
+            checkStatus();
+        });
+    </script>
+</body>
+</html>

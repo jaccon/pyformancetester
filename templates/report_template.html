@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-indigo.min.css">
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
     
-    <!-- Google Charts Dark Mode -->
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- Chart.js para gráficos dinâmicos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     
     <style>
         {% if theme == 'dark' %}
@@ -159,6 +159,19 @@
             height: 400px;
             margin-bottom: 32px;
         }
+        
+        /* Estilos específicos para os gráficos Chart.js */
+        .graph-card {
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .graph-card canvas {
+            max-width: 100%;
+            max-height: 300px !important;
+            height: 300px !important;
+        }
+        
         .stat-card {
             text-align: center;
             padding: 16px;
@@ -367,6 +380,9 @@
                     <a class="mdl-navigation__link" href="#http">HTTP</a>
                     <a class="mdl-navigation__link" href="#api">APIs</a>
                     <a class="mdl-navigation__link" href="#charts">Gráficos</a>
+                    <a class="mdl-navigation__link" href="/" style="background-color: rgba(255,255,255,0.2); border-radius: 4px; margin-left: 16px;">
+                        <i class="material-icons" style="vertical-align: middle; margin-right: 5px;">arrow_back</i>Nova Análise
+                    </a>
                 </nav>
             </div>
         </header>
@@ -378,11 +394,15 @@
                 <a class="mdl-navigation__link" href="#http">HTTP</a>
                 <a class="mdl-navigation__link" href="#api">APIs</a>
                 <a class="mdl-navigation__link" href="#charts">Gráficos</a>
+                <hr style="margin: 10px 16px; border-color: rgba(0,0,0,0.1);">
+                <a class="mdl-navigation__link" href="/" style="background-color: #3f51b5; color: white;">
+                    <i class="material-icons" style="vertical-align: middle; margin-right: 5px;">arrow_back</i>Nova Análise
+                </a>
             </nav>
         </div>
         <main class="mdl-layout__content">
             <div class="page-content">
-                <h4 id="overview" class="mdl-typography--display-1">Visão Geral</h4>
+                <h4 id="overview" class="mdl-typography--display-1">Executive Summary</h4>
                 
                 <!-- Estatísticas Gerais -->
                 <div class="mdl-grid">
@@ -415,7 +435,7 @@
                 <!-- Informações do Site -->
                 <div class="demo-card-wide mdl-card mdl-shadow--2dp">
                     <div class="mdl-card__title">
-                        <h2 class="mdl-card__title-text">Informações do Site</h2>
+                        <h2 class="mdl-card__title-text">Website Performance Metrics</h2>
                     </div>
                     <div class="mdl-card__supporting-text">
                         <p><strong>URL:</strong> {{ url }}</p>
@@ -430,7 +450,7 @@
                 <div class="section-divider"></div>
                 
                 <!-- Recursos -->
-                <h4 id="resources" class="mdl-typography--display-1">Recursos por Tipo</h4>
+                <h4 id="resources" class="mdl-typography--display-1">Digital Assets Analysis</h4>
                 
                 <div class="mdl-grid">
                     {% for resource_type, stats in resource_stats.items() %}
@@ -465,12 +485,12 @@
                 <div class="section-divider"></div>
                 
                 <!-- Estatísticas HTTP -->
-                <h4 id="http" class="mdl-typography--display-1">Estatísticas HTTP</h4>
+                <h4 id="http" class="mdl-typography--display-1">Network Performance</h4>
                 
                 <!-- Status Codes -->
                 <div class="demo-card-wide mdl-card mdl-shadow--2dp">
                     <div class="mdl-card__title">
-                        <h2 class="mdl-card__title-text">Códigos de Status HTTP</h2>
+                        <h2 class="mdl-card__title-text">HTTP Response Status</h2>
                     </div>
                     <div class="mdl-card__supporting-text">
                         <table class="mdl-data-table mdl-js-data-table full-width-table">
@@ -509,7 +529,7 @@
                 <!-- Tempos de Resposta -->
                 <div class="demo-card-wide mdl-card mdl-shadow--2dp" style="margin-top: 24px;">
                     <div class="mdl-card__title">
-                        <h2 class="mdl-card__title-text">Tempos de Resposta</h2>
+                        <h2 class="mdl-card__title-text">Response Time Analysis</h2>
                     </div>
                     <div class="mdl-card__supporting-text">
                         <div class="mdl-grid">
@@ -544,7 +564,7 @@
                 <!-- Content Types -->
                 <div class="demo-card-wide mdl-card mdl-shadow--2dp" style="margin-top: 24px;">
                     <div class="mdl-card__title">
-                        <h2 class="mdl-card__title-text">Tipos de Conteúdo</h2>
+                        <h2 class="mdl-card__title-text">Content Type Distribution</h2>
                     </div>
                     <div class="mdl-card__supporting-text">
                         <table class="mdl-data-table mdl-js-data-table full-width-table">
@@ -571,7 +591,7 @@
                 <div class="section-divider"></div>
                 
                 <!-- APIs -->
-                <h4 id="api" class="mdl-typography--display-1">APIs e Endpoints</h4>
+                <h4 id="api" class="mdl-typography--display-1">API & Services Integration</h4>
                 
                 {% if total_apis > 0 %}
                 {% for api_type, apis in api_data.items() %}
@@ -630,30 +650,53 @@
                 <div class="section-divider"></div>
                 
                 <!-- Gráficos -->
-                <h4 id="charts" class="mdl-typography--display-1">Gráficos</h4>
+                <h4 id="charts" class="mdl-typography--display-1">Performance Dashboard</h4>
                 
                 <div class="mdl-grid">
-                    <!-- Gráfico de Tempo de Carregamento -->
+                    <!-- Gráfico de Tempo de Carregamento (Chart.js) -->
                     <div class="mdl-cell mdl-cell--6-col">
                         <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
-                            <h4>Tempo de Carregamento por Tipo de Recurso</h4>
-                            {% if graph_images.load_times %}
-                            <img src="data:image/png;base64,{{ graph_images.load_times }}" alt="Tempos de Carregamento" class="graph-img">
-                            {% else %}
-                            <p>Gráfico não disponível</p>
-                            {% endif %}
+                            <h4>User Experience Impact by Asset Type</h4>
+                            <canvas id="loadTimesChart" width="400" height="250"></canvas>
+                            <script>
+                            // Dados do gráfico de tempo de carregamento por tipo de recurso
+                            const chartLoadTimesLabels = {{ chart_load_times_labels|tojson }};
+                            const chartLoadTimesData = {{ chart_load_times_data|tojson }};
+                            const ctxLoadTimes = document.getElementById('chartLoadTimes').getContext('2d');
+                            new Chart(ctxLoadTimes, {
+                                type: 'bar',
+                                data: {
+                                    labels: chartLoadTimesLabels,
+                                    datasets: [{
+                                        label: 'Tempo médio (ms)',
+                                        data: chartLoadTimesData,
+                                        backgroundColor: '#3f51b5',
+                                        borderRadius: 6
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: { display: false },
+                                        title: { display: false }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            title: { display: true, text: 'Tempo (ms)' }
+                                        }
+                                    }
+                                }
+                            });
+                            </script>
                         </div>
                     </div>
                     
                     <!-- Gráfico de Distribuição de Tamanho -->
                     <div class="mdl-cell mdl-cell--6-col">
                         <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
-                            <h4>Distribuição de Tamanho por Tipo de Recurso</h4>
-                            {% if graph_images.size_distribution %}
-                            <img src="data:image/png;base64,{{ graph_images.size_distribution }}" alt="Distribuição de Tamanho" class="graph-img">
-                            {% else %}
-                            <p>Gráfico não disponível</p>
-                            {% endif %}
+                            <h4>Bandwidth Utilization by Content Category</h4>
+                            <canvas id="sizeChart" width="400" height="250"></canvas>
                         </div>
                     </div>
                 </div>
@@ -662,38 +705,28 @@
                     <!-- Gráfico de Status Codes -->
                     <div class="mdl-cell mdl-cell--6-col">
                         <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
-                            <h4>Distribuição de Códigos de Status HTTP</h4>
-                            {% if graph_images.status_codes %}
-                            <img src="data:image/png;base64,{{ graph_images.status_codes }}" alt="Códigos de Status" class="graph-img">
-                            {% else %}
-                            <p>Gráfico não disponível</p>
-                            {% endif %}
+                            <h4>Request Success Rate Analysis</h4>
+                            <canvas id="statusChart" width="400" height="250"></canvas>
                         </div>
                     </div>
                     
-                    <!-- Gráfico de TTFB -->
+                    <!-- Gráfico de Tipos de Conteúdo -->
                     <div class="mdl-cell mdl-cell--6-col">
                         <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
-                            <h4>Tempo até o Primeiro Byte (TTFB) por Tipo</h4>
-                            {% if graph_images.ttfb_distribution %}
-                            <img src="data:image/png;base64,{{ graph_images.ttfb_distribution }}" alt="TTFB" class="graph-img">
-                            {% else %}
-                            <p>Gráfico não disponível</p>
-                            {% endif %}
+                            <h4>Digital Asset Portfolio Overview</h4>
+                            <canvas id="contentTypesChart" width="400" height="250"></canvas>
                         </div>
                     </div>
                 </div>
                 
                 <div class="mdl-grid">
                     <!-- Gráfico de APIs se disponível -->
-                    {% if graph_images.api_load_times %}
                     <div class="mdl-cell mdl-cell--12-col">
                         <div class="demo-card-wide mdl-card mdl-shadow--2dp graph-card">
-                            <h4>Tempo de Carregamento por Tipo de API</h4>
-                            <img src="data:image/png;base64,{{ graph_images.api_load_times }}" alt="Tempos de API" class="graph-img">
+                            <h4>Service Integration Performance</h4>
+                            <canvas id="apiChart" width="600" height="250"></canvas>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
                 
                 <div class="section-divider"></div>
@@ -811,22 +844,343 @@
     </div>
 
     <script>
-        // Configure os gráficos baseado no tema
-        google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(function() {
-            // Aplique o tema adequado a todos os gráficos (se houver)
-            if (document.querySelectorAll('.graph-img').length) {
-                document.querySelectorAll('.graph-img').forEach(function(img) {
-                    {% if theme == 'dark' %}
-                    // Filtros para o tema escuro
-                    img.style.filter = "brightness(0.85) contrast(1.2)";
-                    {% else %}
-                    // Nenhum filtro para o tema claro
-                    img.style.filter = "none";
-                    {% endif %}
-                });
+        // Verificar se Chart.js foi carregado
+        console.log('Chart.js carregado:', typeof Chart !== 'undefined');
+        console.log('Versão do Chart.js:', typeof Chart !== 'undefined' ? Chart.version : 'N/A');
+        
+        // Dados dos gráficos passados do Python
+        const chartData = {
+            loadTimes: {
+                labels: {{ chart_load_times_labels | tojson }},
+                data: {{ chart_load_times_data | tojson }}
+            },
+            size: {
+                labels: {{ chart_size_labels | tojson }},
+                data: {{ chart_size_data | tojson }}
+            },
+            status: {
+                labels: {{ chart_status_labels | tojson }},
+                data: {{ chart_status_data | tojson }}
+            },
+            contentTypes: {
+                labels: {{ chart_content_types_labels | tojson }},
+                data: {{ chart_content_types_data | tojson }}
+            },
+            api: {
+                labels: {{ chart_api_labels | tojson }},
+                data: {{ chart_api_data | tojson }}
             }
-        });
+        };
+
+        // Debug: log dos dados
+        console.log('Dados dos gráficos:', chartData);
+
+        // Configuração do tema
+        const isDarkTheme = {% if theme == 'dark' %}true{% else %}false{% endif %};
+        const textColor = isDarkTheme ? '#ffffff' : '#333333';
+        const gridColor = isDarkTheme ? '#444444' : '#cccccc';
+        const backgroundColor = isDarkTheme ? '#263238' : '#ffffff';
+
+        // Cores para os gráficos
+        const chartColors = [
+            '#3f51b5', '#2196f3', '#4caf50', '#ff9800', '#f44336',
+            '#9c27b0', '#607d8b', '#795548', '#009688', '#ffeb3b'
+        ];
+
+        // Função auxiliar para verificar se os dados são válidos
+        function hasValidData(chartInfo) {
+            return chartInfo.labels && chartInfo.labels.length > 0 && 
+                   chartInfo.data && chartInfo.data.length > 0 &&
+                   chartInfo.labels.length === chartInfo.data.length &&
+                   chartInfo.data.some(value => value > 0); // Pelo menos um valor deve ser maior que 0
+        }
+
+        // Função auxiliar para verificar dados válidos, mas permitindo zeros (para gráficos de barras)
+        function hasValidDataAllowZeros(chartInfo) {
+            return chartInfo.labels && chartInfo.labels.length > 0 && 
+                   chartInfo.data && chartInfo.data.length > 0 &&
+                   chartInfo.labels.length === chartInfo.data.length;
+        }
+
+        // Gráfico de Tempo de Carregamento (barra)
+        if (hasValidDataAllowZeros(chartData.loadTimes)) {
+            console.log('Criando gráfico de tempo de carregamento');
+            const canvas1 = document.getElementById('loadTimesChart');
+            if (canvas1) {
+                console.log('Canvas loadTimesChart encontrado');
+                const ctx1 = canvas1.getContext('2d');
+                try {
+                    const chart1 = new Chart(ctx1, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.loadTimes.labels,
+                            datasets: [{
+                                label: 'Load Time Impact (ms)',
+                                data: chartData.loadTimes.data,
+                                backgroundColor: chartColors.slice(0, chartData.loadTimes.data.length),
+                                borderColor: chartColors.slice(0, chartData.loadTimes.data.length).map(color => color + 'CC'),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: textColor
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        color: textColor
+                                    },
+                                    grid: {
+                                        color: gridColor
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: textColor
+                                    },
+                                    grid: {
+                                        color: gridColor
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Gráfico de tempo criado com sucesso:', chart1);
+                } catch (error) {
+                    console.error('Erro ao criar gráfico de tempo:', error);
+                }
+            } else {
+                console.error('Canvas loadTimesChart não encontrado!');
+            }
+        } else {
+            console.warn('Dados inválidos para gráfico de tempo de carregamento:', chartData.loadTimes);
+        }
+
+        // Gráfico de Distribuição de Tamanho (mudado para barra)
+        if (hasValidDataAllowZeros(chartData.size)) {
+            console.log('Criando gráfico de distribuição de tamanho');
+            const canvas2 = document.getElementById('sizeChart');
+            if (canvas2) {
+                console.log('Canvas sizeChart encontrado');
+                const ctx2 = canvas2.getContext('2d');
+                try {
+                    const chart2 = new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.size.labels,
+                            datasets: [{
+                                label: 'Bandwidth Usage (KB)',
+                                data: chartData.size.data,
+                                backgroundColor: chartColors.slice(0, chartData.size.data.length),
+                                borderColor: chartColors.slice(0, chartData.size.data.length).map(color => color + 'CC'),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: textColor
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        color: textColor
+                                    },
+                                    grid: {
+                                        color: gridColor
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: textColor
+                                    },
+                                    grid: {
+                                        color: gridColor
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Gráfico de tamanho criado com sucesso:', chart2);
+                } catch (error) {
+                    console.error('Erro ao criar gráfico de tamanho:', error);
+                }
+            } else {
+                console.error('Canvas sizeChart não encontrado!');
+            }
+        } else {
+            console.warn('Dados inválidos para gráfico de tamanho:', chartData.size);
+            document.getElementById('sizeChart').parentElement.innerHTML = '<p style="color: ' + textColor + ';">Dados de tamanho não disponíveis</p>';
+        }
+
+        // Gráfico de Status HTTP (mudado para barra)
+        if (hasValidDataAllowZeros(chartData.status)) {
+            console.log('Criando gráfico de status HTTP');
+            const ctx3 = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: chartData.status.labels,
+                    datasets: [{
+                        label: 'Quantidade',
+                        data: chartData.status.data,
+                        backgroundColor: chartColors.slice(0, chartData.status.data.length),
+                        borderColor: chartColors.slice(0, chartData.status.data.length).map(color => color + 'CC'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            console.warn('Dados inválidos para gráfico de status:', chartData.status);
+            document.getElementById('statusChart').parentElement.innerHTML = '<p style="color: ' + textColor + ';">Dados de status não disponíveis</p>';
+        }
+
+        // Gráfico de Tipos de Conteúdo (mudado para barra vertical)
+        if (hasValidDataAllowZeros(chartData.contentTypes)) {
+            console.log('Criando gráfico de tipos de conteúdo');
+            const ctx4 = document.getElementById('contentTypesChart').getContext('2d');
+            new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: chartData.contentTypes.labels,
+                    datasets: [{
+                        label: 'Quantidade',
+                        data: chartData.contentTypes.data,
+                        backgroundColor: chartColors.slice(0, chartData.contentTypes.data.length),
+                        borderColor: chartColors.slice(0, chartData.contentTypes.data.length).map(color => color + 'CC'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            console.warn('Dados inválidos para gráfico de tipos de conteúdo:', chartData.contentTypes);
+            document.getElementById('contentTypesChart').parentElement.innerHTML = '<p style="color: ' + textColor + ';">Dados de tipos de conteúdo não disponíveis</p>';
+        }
+
+        // Gráfico de API (mudado para barra)
+        if (hasValidDataAllowZeros(chartData.api)) {
+            console.log('Criando gráfico de API');
+            const ctx5 = document.getElementById('apiChart').getContext('2d');
+            new Chart(ctx5, {
+                type: 'bar',
+                data: {
+                    labels: chartData.api.labels,
+                    datasets: [{
+                        label: 'Tempo de Resposta (ms)',
+                        data: chartData.api.data,
+                        backgroundColor: chartColors.slice(0, chartData.api.data.length),
+                        borderColor: chartColors.slice(0, chartData.api.data.length).map(color => color + 'CC'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            console.warn('Dados inválidos para gráfico de API:', chartData.api);
+            document.getElementById('apiChart').parentElement.innerHTML = '<p style="color: ' + textColor + ';">Dados de API não disponíveis</p>';
+        }
     </script>
 </body>
 </html>

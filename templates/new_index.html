@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <title>pyFormanceTester - Análise de Performance</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 350px;
+        }
+        .input-field input[type="text"] {
+            text-align: center;
+        }
+        .header-logo {
+            margin-bottom: 20px;
+        }
+        .header-logo i {
+            font-size: 3rem;
+            color: #1976d2;
+        }
+        .tool-description {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 6px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-logo">
+            <i class="material-icons">speed</i>
+            <h4>pyFormanceTester</h4>
+            <p class="grey-text">Ferramenta de Análise de Performance de Websites</p>
+        </div>
+        
+        <form action="/analyze" method="POST">
+            <div class="input-field">
+                <input id="url" type="text" name="url" required>
+                <label for="url">Website URL</label>
+            </div>
+            <button class="btn waves-effect waves-light" type="submit">
+                Analisar Website
+                <i class="material-icons right">send</i>
+            </button>
+        </form>
+
+        <div class="tool-description">
+            <h5>Sobre esta ferramenta</h5>
+            <p>O pyFormanceTester analisa o desempenho do seu website, identificando:</p>
+            <ul>
+                <li>Tempo de carregamento de recursos</li>
+                <li>Tamanho total da página</li>
+                <li>Distribuição de tipos de recursos</li>
+                <li>Códigos de status HTTP</li>
+                <li>APIs utilizadas pelo site</li>
+            </ul>
+            <p>O resultado inclui gráficos e recomendações para melhorar a performance.</p>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Materialize components
+        M.updateTextFields();
+    });
+    </script>
+</body>
+</html>
